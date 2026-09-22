@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Админка — Pocket Signals{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><h2>Админ-панель</h2></div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><b>{{ users|length }}</b><span>пользователей</span></div>
+    <div class="stat-card"><b>{{ pending_users|length }}</b><span>ждут одобрения</span></div>
+    <div class="stat-card"><b>{{ signals_count }}</b><span>сигналов выдано</span></div>
+    <div class="stat-card"><b>{{ mem.total }}</b><span>паттернов в памяти ИИ</span></div>
+  </div>
+
+  <div class="card">
+    <h3>📥 Заявки пользователей</h3>
+    {% if pending_users %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Логин</th><th>Email</th><th>Дата</th><th></th></tr></thead>
+        <tbody>
+        {% for u in pending_users %}
+          <tr>
+            <td>{{ u.username }}</td>
+            <td class="muted">{{ u.email }}</td>
+            <td class="muted">{{ u.created_at.strftime('%d.%m.%Y') }}</td>
+            <td>
+              <div class="actions">
+                <form method="post" action="{{ url_for('admin_approve') }}" class="inline">
+                  <input type="hidden" name="user_id" value="{{ u.id }}">
+                  <input type="hidden" name="action" value="approve">
+                  <button class="btn btn-success btn-sm">✅ Одобрить</button>
+                </form>
+                <form method="post" action="{{ url_for('admin_approve') }}" class="inline">
+                  <input type="hidden" name="user_id" value="{{ u.id }}">
+                  <input type="hidden" name="action" value="reject">
+                  <button class="btn btn-danger btn-sm">❌ Отклонить</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">Новых заявок нет.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>👥 Пользователи</h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Логин</th><th>Тариф</th><th>Статус</th><th>Сигналов сегодня</th></tr></thead>
+        <tbody>
+        {% for u in users %}
+          <tr>
+            <td>
+              {{ u.username }}
+              {% if u.is_admin %}<span class="chip">админ</span>{% endif %}
+            </td>
+            <td>
+              {% if not u.is_admin %}
+              <form method="post" action="{{ url_for('admin_plan') }}" class="inline">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                <select name="plan" data-autosubmit style="width:auto">
+                  {% for key, p in plans.items() %}
+                  <option value="{{ key }}"{% if u.subscription_plan == key %} selected{% endif %}>
+                    {{ p.name }} ({{ p.price }}₽)
+                  </option>
+                  {% endfor %}
+                </select>
+              </form>
+              {% else %}—{% endif %}
+            </td>
+            <td>{% if u.is_approved %}✅ одобрен{% else %}⏳ ждёт{% endif %}</td>
+            <td>{{ u.signals_used_today }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🧠 Память ИИ — топ паттернов</h3>
+    {% if mem.top %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Урок</th><th>Актив</th><th>Направление</th><th>Выигр/проигр</th><th>Успешность</th></tr></thead>
+        <tbody>
+        {% for m in mem.top %}
+          <tr>
+            <td>{{ m.lesson|truncate(100) }}</td>
+            <td>{{ m.asset }}</td>
+            <td><span class="dir-badge sm dir-{{ m.direction|lower }}">{{ m.direction }}</span></td>
+            <td>{{ m.success_count }} / {{ m.fail_count }}</td>
+            <td>{{ m.success_rate }}%</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">Память пуста — заполнится по мере проверки результатов сигналов.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card center">
+    <h1 class="error-code">{{ code }}</h1>
+    <p class="muted">{{ message }}</p>
+    <p style="margin-top:18px">
+      <a class="btn btn-primary" href="{{ url_for('landing') }}">На главную</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

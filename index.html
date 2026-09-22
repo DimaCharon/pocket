@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Pocket Signals — AI-сигналы для Pocket Option{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">🤖 Самообучающийся ИИ + живые данные рынка</div>
+    <h1>AI-сигналы для <span class="grad">Pocket Option</span></h1>
+    <p class="hero-sub">
+      ИИ анализирует RSI, MACD, SMA и полосы Боллинджера по активу и выдаёт сигнал CALL/PUT
+      с уровнем уверенности, таймфреймом и понятным разбором по-русски.
+      После каждой сделки ИИ извлекает урок и становится умнее.
+    </p>
+    <div class="hero-cta">
+      <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Начать бесплатно</a>
+      <a href="{{ url_for('login') }}" class="btn btn-outline btn-lg">У меня уже есть аккаунт</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><b>16+</b><span>OTC-пар, крипта, акции</span></div>
+      <div class="stat"><b>1m / 5m</b><span>таймфреймы сигналов</span></div>
+      <div class="stat"><b>24/7</b><span>анализ рынка</span></div>
+      <div class="stat"><b>∞</b><span>память уроков</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="container">
+    <div class="grid-3">
+      <div class="card feat">
+        <div class="feat-icon">🧠</div>
+        <h3>Самообучающаяся память</h3>
+        <p>После каждой сделки ИИ записывает урок: какой паттерн сработал, какой — нет.
+        При следующих сигналах релевантные уроки уже учтены.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-icon">📊</div>
+        <h3>Честный анализ</h3>
+        <p>Уверенность отражает реальную силу сигнала. Никаких обещаний «90%+»:
+        бинарные опционы — высокий риск, и ИИ это знает.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-icon">🇷🇺</div>
+        <h3>Разбор по-русски</h3>
+        <p>К каждому сигналу — объяснение: что ИИ увидел на графике,
+        почему именно CALL или PUT, и какие факторы решают.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="steps">
+  <div class="container">
+    <h2>Как это работает</h2>
+    <div class="steps-grid">
+      <div class="step">
+        <b class="step-num">1</b>
+        <h3>Регистрация</h3>
+        <p>Создаёте аккаунт. Администратор одобряет заявку (обычно в течение пары минут).</p>
+      </div>
+      <div class="step">
+        <b class="step-num">2</b>
+        <h3>Ввод ключей при входе</h3>
+        <p>При логине вставляете свой API-ключ dahl.global и (опционально) SSID Pocket Option.
+        Ключи сохраняются в вашем профиле — не пропадут при закрытии браузера.</p>
+      </div>
+      <div class="step">
+        <b class="step-num">3</b>
+        <h3>Получение сигналов</h3>
+        <p>Выбираете актив, нажимаете «Получить сигнал» — ИИ выдаёт CALL/PUT с разбором.
+        История и результаты сделок — на дашборде.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

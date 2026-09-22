@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — Pocket Signals{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <h2>Регистрация</h2>
+    <p class="muted center">После регистрации администратор рассмотрит заявку и одобрит доступ.</p>
+    <form method="post">
+      <label>Логин
+        <input type="text" name="username" required minlength="3" placeholder="например, alex_trader">
+      </label>
+      <label>Email
+        <input type="email" name="email" required placeholder="you@mail.ru">
+      </label>
+      <label>Пароль
+        <input type="password" name="password" required minlength="6" placeholder="минимум 6 символов">
+      </label>
+      <label>Повторите пароль
+        <input type="password" name="password2" required minlength="6">
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Создать аккаунт</button>
+    </form>
+    <p class="center muted" style="margin-top:16px">Уже есть аккаунт?
+      <a href="{{ url_for('login') }}">Войти</a></p>
+  </div>
+</div>
+{% endblock %}

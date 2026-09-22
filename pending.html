@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Ожидание — Pocket Signals{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card center">
+    <div class="pending-icon">⏳</div>
+    <h2>Аккаунт ожидает одобрения</h2>
+    <p class="muted" style="margin-top:10px">
+      Администратор проверяет вашу заявку. Обычно это занимает несколько минут.
+      Загляните позже — как только доступ откроется, вы сможете получать сигналы.
+    </p>
+    <p style="margin-top:18px">
+      <a class="btn btn-primary" href="{{ url_for('logout') }}">Выйти</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

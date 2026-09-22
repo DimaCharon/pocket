@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Вход — Pocket Signals{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <h2>Вход</h2>
+    <p class="muted center">Pocket Signals — AI-сигналы для Pocket Option</p>
+    <form method="post">
+      <label>Логин
+        <input type="text" name="username" required autofocus placeholder="ваш логин">
+      </label>
+      <label>Пароль
+        <input type="password" name="password" required placeholder="••••••••">
+      </label>
+
+      <details class="conn-details">
+        <summary>🔑 Подключение: API-ключ и Pocket Option (вводится один раз)</summary>
+        <p class="hint">Заполните при первом входе — ключи сохранятся в вашем профиле
+        и не потеряются при закрытии браузера. Поменять их можно позже в ⚙️ Настройках.</p>
+        <label>API-ключ ИИ (dahl.global)
+          <input type="password" name="ai_api_key" placeholder="sk-...">
+        </label>
+        <label>SSID Pocket Option (для живых данных)
+          <textarea name="pocket_ssid" rows="3" placeholder='42["auth",{"session":"...","isDemo":1,...}]'></textarea>
+        </label>
+        <details class="hint-box">
+          <summary>Откуда взять SSID?</summary>
+          <ol class="hint-steps">
+            <li>Откройте сайт Pocket Option в браузере и войдите в свой аккаунт.</li>
+            <li>Нажмите <b>F12</b> (инструменты разработчика) → вкладка «Сеть» (Network) → фильтр <b>WS</b>.</li>
+            <li>Кликните на открытое WebSocket-подключение, в «Сообщениях» найдите сообщение,
+            начинающееся с <b>42["auth"</b> (отправляется сразу после загрузки).</li>
+            <li>Скопируйте всё сообщение целиком (от 42 до последней }) и вставьте в поле выше.</li>
+          </ol>
+        </details>
+      </details>
+
+      <button type="submit" class="btn btn-primary btn-block">Войти</button>
+    </form>
+    <p class="center muted" style="margin-top:16px">Нет аккаунта?
+      <a href="{{ url_for('register') }}">Зарегистрироваться</a></p>
+  </div>
+</div>
+{% endblock %}
