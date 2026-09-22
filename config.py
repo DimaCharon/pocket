@@ -68,7 +68,7 @@ class Config:
     TIMEFRAMES = ["1m", "5m"]
 
 
-# Модульные алиасы: внутренние модули пишут `from . import config`
+# Модульные алиасы: внутренние модули пишут `import config`
 # и обращаются как config.DAHL_API_URL, config.ASSETS и т.д.
 for _name in [n for n in dir(Config) if n.isupper()]:
     globals()[_name] = getattr(Config, _name)

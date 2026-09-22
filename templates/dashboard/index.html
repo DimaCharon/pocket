@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Дашборд — Pocket Signals{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <h2>Дашборд</h2>
+    {% set rem = current_user.remaining_signals() %}
+    <div class="limit-pill">
+      {% if rem is none %}∞ сигналов сегодня{% else %}Осталось сигналов сегодня: {{ rem }}{% endif %}
+    </div>
+  </div>
+
+  {% if not current_user.ai_api_key %}
+  <div class="banner banner-warn">⚠️ <b>Не задан API-ключ ИИ.</b> Без ключа сигналы получить нельзя.
+  Введите его в <a href="{{ url_for('settings') }}">⚙️ Настройках</a> (или при следующем входе).</div>
+  {% endif %}
+  {% if not current_user.pocket_ssid %}
+  <div class="banner banner-info">ℹ️ Сейчас сервис работает на <b>симулированных данных</b>.
+  Чтобы получать реальные данные Pocket Option, вставьте ваш SSID в
+  <a href="{{ url_for('settings') }}">⚙️ Настройках</a>.</div>
+  {% endif %}
+
+  <div class="card signal-card">
+    <form method="post" action="{{ url_for('get_signal') }}" class="signal-form">
+      <label>Актив
+        <select name="asset" required>
+          {% for group, items in assets.items() %}
+          <optgroup label="{{ group }}">
+            {% for item in items %}<option value="{{ item }}">{{ item }}</option>{% endfor %}
+          </optgroup>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" id="signal-btn" class="btn btn-primary btn-lg">🤖 Получить сигнал</button>
+    </form>
+  </div>
+
+  {% if last_signal %}
+  {% set s = last_signal %}
+  <div class="card result-card">
+    <div class="result-head">
+      <div>
+        <div class="result-asset">{{ s.asset }}</div>
+        <div class="muted">
+          {{ s.created_at.strftime('%d.%m.%Y %H:%M') }} ·
+          {% if s.result == 'pending' %}⏳ проверяется результат
+          {% elif s.result == 'won' %}✅ выигрыш
+          {% else %}❌ проигрыш{% endif %}
+        </div>
+      </div>
+      <div class="dir-badge dir-{{ s.direction|lower }}">{{ s.direction }}</div>
+    </div>
+    <div class="result-meta">
+      <div><span class="muted">Уверенность</span><b>{{ s.confidence }}%</b></div>
+      <div><span class="muted">Таймфрейм</span><b>{{ s.timeframe }}</b></div>
+      <div><span class="muted">Цена входа</span><b>{{ s.entry_price }}</b></div>
+      <div><span class="muted">Источник данных</span><b>{{ s.market_data.get('source', '—') }}</b></div>
+    </div>
+    <div class="ai-line">🤖 ИИ: {{ s.provider }}{% if s.memory_used %} · память: {{ s.memory_used }} уроков{% endif %}</div>
+    <p class="analysis">{{ s.analysis }}</p>
+    {% set ind = s.market_data.get('indicators') %}
+    {% if ind %}
+    <div class="chips">
+      <span class="chip">RSI {{ ind.rsi }}</span>
+      <span class="chip">MACD {% if ind.macd_cross == 'up' %}↑ бычье пересечение{% elif ind.macd_cross == 'down' %}↓ медвежье пересечение{% else %}→ без пересечения{% endif %}</span>
+      <span class="chip">{% if ind.trend == 'up' %}📈 восходящий тренд{% elif ind.trend == 'down' %}📉 нисходящий тренд{% else %}➡️ флэт{% endif %}</span>
+      <span class="chip">Волатильность {{ ind.volatility }}%</span>
+    </div>
+    {% endif %}
+    {% set factors = s.factors_list %}
+    {% if factors %}
+    <div class="factors">
+      <b>Ключевые факторы:</b>
+      <ul>{% for f in factors %}<li>{{ f }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h3>История сигналов</h3>
+    {% if signals %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Время</th><th>Актив</th><th>Направление</th><th>Уверенность</th><th>Результат</th></tr></thead>
+        <tbody>
+        {% for s in signals %}
+          <tr>
+            <td class="muted">{{ s.created_at.strftime('%d.%m %H:%M') }}</td>
+            <td>{{ s.asset }}</td>
+            <td><span class="dir-badge sm dir-{{ s.direction|lower }}">{{ s.direction }}</span></td>
+            <td>{{ s.confidence }}%</td>
+            <td>{% if s.result == 'won' %}✅{% elif s.result == 'lost' %}❌{% else %}⏳{% endif %}
+              {% if s.result_note %}<span class="muted small"> {{ s.result_note }}</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">Сигналов пока нет — получите первый выше. 🚀</p>
+    {% endif %}
+  </div>
+
+  {% if notifs %}
+  <div class="card">
+    <h3>Уведомления</h3>
+    {% for n in notifs %}
+      <div class="notif notif-{{ n.type }}"><b>{{ n.title }}:</b> {{ n.message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

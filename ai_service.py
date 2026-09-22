@@ -15,7 +15,7 @@ import re
 
 import requests
 
-from . import config
+import config
 
 
 class AIServiceError(Exception):

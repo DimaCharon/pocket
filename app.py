@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Pocket Signals: фабрика приложения, роуты, бизнес-логика."""
+"""Pocket Signals: фабрика приложения, роуты, бизнес-логика.
+
+Плоская структура: все модули лежат в корне проекта (без пакета app/).
+Точки входа для gunicorn:  app:app  /  app:create_app()  /  wsgi:app
+"""
 import json
 import random
 import re
@@ -9,16 +13,12 @@ from datetime import datetime
 from functools import wraps
 
 from flask import (Flask, flash, redirect, render_template, request, url_for)
-from flask_login import (LoginManager, current_user, login_required,
-                         login_user, logout_user)
-from flask_sqlalchemy import SQLAlchemy
+from flask_login import (current_user, login_required, login_user, logout_user)
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import text
 
-from . import config
-
-db = SQLAlchemy()
-login_manager = LoginManager()
+import config
+from extensions import db, login_manager
 
 
 def _migrate_db():
@@ -51,7 +51,7 @@ def _migrate_db():
 
 
 def _ensure_admin():
-    from .models import User
+    from models import User
     if not User.query.filter_by(username=config.ADMIN_USERNAME).first():
         admin = User(
             username=config.ADMIN_USERNAME,
@@ -66,7 +66,7 @@ def _ensure_admin():
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config.from_object(config.Config)
 
     db.init_app(app)
@@ -74,11 +74,11 @@ def create_app():
     login_manager.login_view = "login"
     login_manager.unauthorized_message = "Войдите, чтобы продолжить."
 
-    from . import models  # noqa: F401  (регистрирует модели)
-    from .ai_service import AIService, AIServiceError
-    from .memory_service import MemoryService
-    from .models import Notification, Signal, User
-    from .pocket_service import PocketService
+    import models  # noqa: F401  (регистрирует модели)
+    from ai_service import AIService, AIServiceError
+    from memory_service import MemoryService
+    from models import Notification, Signal, User
+    from pocket_service import PocketService
 
     with app.app_context():
         db.create_all()
@@ -446,3 +446,8 @@ def create_app():
                                message="Ошибка сервера. Попробуйте позже."), 500
 
     return app
+
+
+# Готовый WSGI-объект для gunicorn. Работают все варианты запуска:
+#   gunicorn app:app     gunicorn app:create_app()     gunicorn wsgi:app
+app = create_app()

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Подписка — Pocket Signals{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><h2>Подписка</h2></div>
+  <p class="muted center sub-note">
+    Демо-режим: тариф активируется сразу, без оплаты. Дневной лимит сигналов сбрасывается в полночь.
+  </p>
+  <div class="plans-grid">
+    {% for key, plan in plans.items() %}
+    <div class="card plan-card{% if plan.popular %} popular{% endif %}">
+      {% if plan.popular %}<div class="popular-tag">🔥 Популярный</div>{% endif %}
+      <h3>{{ plan.name }}</h3>
+      <div class="plan-price">
+        {% if plan.price == 0 %}Бесплатно{% else %}{{ plan.price }}₽<span>/мес</span>{% endif %}
+      </div>
+      <p class="muted">{{ plan.desc }}</p>
+      <ul class="plan-feats">
+        <li>{% if plan.daily_limit < 0 %}∞ безлимит сигналов в день{% else %}{{ plan.daily_limit }} сигналов в день{% endif %}</li>
+        <li>AI-анализ по-русски</li>
+        <li>Самообучающаяся память</li>
+        {% if key in ('pro', 'vip') %}<li>Приоритетная поддержка</li>{% endif %}
+        {% if key == 'vip' %}<li>Ранний доступ к новым функциям</li>{% endif %}
+      </ul>
+      <form method="post" action="{{ url_for('subscription_choose') }}">
+        <input type="hidden" name="plan" value="{{ key }}">
+        <button class="btn btn-block {% if current == key %}btn-done{% else %}btn-primary{% endif %}"
+                {% if current == key %}disabled{% endif %}>
+          {% if current == key %}✓ Ваш тариф{% else %}Выбрать{% endif %}
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

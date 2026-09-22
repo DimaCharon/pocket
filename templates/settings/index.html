@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Настройки — Pocket Signals{% endblock %}
+{% block content %}
+<div class="container page narrow">
+  <h2>⚙️ Настройки</h2>
+  <p class="muted" style="margin-bottom:20px">
+    Ключи ниже хранятся в вашем профиле: не пропадают при закрытии браузера
+    и видны только вам.
+  </p>
+
+  <div class="card">
+    <h3>🤖 ИИ — API-ключ (dahl.global)</h3>
+    <p class="muted" style="margin-bottom:14px">Ключ используется для получения сигналов.
+      Модель: <b>{{ dahl_model }}</b>.</p>
+    <form method="post" action="{{ url_for('settings') }}">
+      <label>Ваш API-ключ
+        <input type="password" name="ai_api_key" value="{{ current_user.ai_api_key }}"
+               placeholder="sk-...">
+      </label>
+      <p class="hint" style="margin-bottom:10px">Чтобы заменить ключ — вставьте новый.
+      Чтобы удалить — очистите поле и нажмите «Сохранить».</p>
+      <div class="btn-row">
+        <button class="btn btn-primary" name="action" value="save">💾 Сохранить</button>
+        <button class="btn btn-ghost" name="action" value="test_ai">🧪 Тест ключа</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>📡 Pocket Option — SSID (живые данные рынка)</h3>
+    <p class="muted" style="margin-bottom:14px">
+      SSID — сессионный ключ вашего аккаунта Pocket Option. По нему сайт читает
+      реальные свечи и цены (только чтение, доступ к деньгам не даёт).
+      Без SSID работает симуляция с пометкой.
+    </p>
+    <form method="post" action="{{ url_for('settings') }}">
+      <label>SSID (сообщение 42["auth", ...] из DevTools)
+        <textarea name="pocket_ssid" rows="3"
+                  placeholder='42["auth",{"session":"...","isDemo":1,"name":"..."}]'>{{ current_user.pocket_ssid }}</textarea>
+      </label>
+      <details class="hint-box">
+        <summary>Как получить SSID?</summary>
+        <ol class="hint-steps">
+          <li>Откройте сайт Pocket Option в браузере и войдите в свой аккаунт.</li>
+          <li>Нажмите <b>F12</b> — инструменты разработчика. Вкладка «Сеть» (Network) → фильтр <b>WS</b>.</li>
+          <li>Кликните на открытое WebSocket-подключение. В «Сообщениях» найдите сообщение,
+          начинающееся с <b>42["auth"</b> (отправляется сразу после загрузки страницы).</li>
+          <li>Скопируйте всё сообщение целиком (от 42 до последней }) и вставьте в поле выше.</li>
+          <li>SSID живёт ограниченное время (обычно около суток). Если тест перестанет проходить —
+          скопируйте новый.</li>
+        </ol>
+      </details>
+      <div class="btn-row">
+        <button class="btn btn-primary" name="action" value="save">💾 Сохранить</button>
+        <button class="btn btn-ghost" name="action" value="test_pocket">🧪 Тест подключения</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>ℹ️ О данных</h3>
+    <p class="muted">
+      Если серверу сайта Pocket Option не отвечает (например, IP хостинга заблокирован PO),
+      сервис автоматически переключается на симулированные данные с честной пометкой
+      на каждом сигнале. Проверить, «жив ли» ваш SSID, можно кнопкой «🧪 Тест подключения».
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -156,28 +156,35 @@ WebSocket PO — через встроенную поддержку прокси
 ## 🗂 Структура
 
 ```
-pocket/
+pocket/                    # ВСЁ лежит В КОРНЕ репозитория (плоская структура)
 ├── run.py                  # python run.py → http://localhost:8080
+├── wsgi.py                 # точка входа wsgi:app (для gunicorn/платформ)
+├── entrypoint.sh           # gunicorn + чтение PORT из окружения (для Docker)
 ├── requirements.txt
-├── Dockerfile              # gunicorn, 0.0.0.0:${PORT:-8080}, --timeout 300
+├── Dockerfile              # gunicorn app:app, JSON-CMD, порт из окружения
 ├── .dockerignore / .gitignore
 ├── README.md
-└── app/
-    ├── __init__.py         # фабрика, все роуты, лимиты, фоновая проверка сделок
-    ├── config.py           # ключи (опц.), модели, тарифы, админ, активы
-    ├── models.py           # User, Signal, Notification, MemoryStore
-    ├── ai_service.py       # dahl.global: запрос, JSON-парсинг, нормализация
-    ├── memory_service.py   # уроки, релевантность, статистика, prune_old
-    ├── pocket_service.py   # живой WebSocket PO + симуляция + индикаторы (pandas)
-    ├── static/css/style.css, static/js/main.js
-    └── templates/
-        ├── base.html, error.html
-        ├── auth/  index (лендинг), login, register, pending
-        ├── dashboard/index.html
-        ├── admin/dashboard.html
-        ├── subscription/index.html
-        └── settings/index.html
+├── app.py                  # фабрика приложения, все роуты, лимиты, фоновая проверка сделок
+├── extensions.py           # db (SQLAlchemy) и login_manager
+├── config.py               # ключи (опц.), модели, тарифы, админ, активы
+├── models.py               # User, Signal, Notification, MemoryStore
+├── ai_service.py           # dahl.global: запрос, JSON-парсинг, нормализация
+├── memory_service.py       # уроки, релевантность, статистика, prune_old
+├── pocket_service.py       # живой WebSocket PO + симуляция + индикаторы (pandas)
+├── static/css/style.css, static/js/main.js
+└── templates/
+    ├── base.html, error.html
+    ├── auth/  index (лендинг), login, register, pending
+    ├── dashboard/index.html
+    ├── admin/dashboard.html
+    ├── subscription/index.html
+    └── settings/index.html
 ```
+
+> ⚠️ **Структура критична.** Все `.py`-файлы, `Dockerfile`, `templates/` и `static/`
+> должны лежать **в корне репозитория** — как в списке выше. Подпапки с кодом
+> (`app/`, `pocket/`) и файл `__init__.py` в корне **не нужны и вредят**.
+> Команды запуска, которые поддерживаются: `app:app`, `app:create_app()`, `wsgi:app`.
 
 ---
 
@@ -210,17 +217,20 @@ pocket/
 
 | Симптом | Что проверить |
 |---|---|
+| `ImportError: attempted relative import` / CrashLoop при деплое | В репозитории остался старый код (файл `__init__.py`, папка `app/`). Удалить их в GitHub и залить **новый** набор файлов (плоский, из этого архива). Новый код не содержит относительных импортов и не падает. |
+| Деплой собрался, но сервер не нашёл приложение | В настройках проекта: **стек = «Свой Dockerfile»** (не автоопределение!), папка проекта = корень репозитория (где лежит Dockerfile и `app.py`) |
+| `DATABASE_URL не задан` в логах сборки | В панели проекта создать PostgreSQL (раздел «База данных») — иначе данные живут во временном SQLite и сгорят при пересборке |
 | «Не задан API-ключ ИИ» | Ввести ключ: при входе или ⚙️ Настройки |
 | «API-ключ ИИ не принят (401)» | Ключ опечатан/отозван — скопировать заново из dahl.global |
 | «ИИ временно перегружен (429)» | Бесплатный лимит — подождать минуту |
-| «Pocket Option не ответил / отклонил сессию» | SSID просрочен — скопировать новый; либо IP сервера заблокирован PO |
+| «Pocket Option не ответил / отклонил сессию» | SSID просрочен — скопировать новый; либо IP сервера заблокирован PO (просить RELAXDEV_PROXY_URL в поддержке RelaxDev) |
 | Сигналы с пометкой SIMULATED | То же: без живого PO работает симуляция |
 
 ---
 
 ## 🔒 Безопасность (сделать после развёртывания)
 
-- [ ] Сменить пароль админа в `app/config.py` (сейчас `admin123`).
+- [ ] Сменить пароль админа в `config.py` (сейчас `admin123`).
 - [ ] Задать `SECRET_KEY` (переменная окружения) — иначе сессии уязвимы.
 - [ ] Если старые ключи (Gemini / OpenRouter / Orcarouter / GitHub-токен)
       где-то утекали — **отозвать их** у провайдеров. В этом коде их больше нет.

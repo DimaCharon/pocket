@@ -16,5 +16,6 @@ COPY . .
 EXPOSE 8080
 VOLUME ["/data"]
 
-# timeout 300: ИИ (бесплатные модели) может отвечать до ~2 минут
-CMD gunicorn --workers 1 --threads 4 --timeout 300 -b 0.0.0.0:${PORT:-8080} "app:create_app()"
+# JSON-формат CMD (рекомендация Docker — корректная передача сигналов).
+# Порт берётся из окружения внутри entrypoint.sh (0.0.0.0:${PORT:-8080}).
+CMD ["sh", "/app/entrypoint.sh"]

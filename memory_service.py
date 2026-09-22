@@ -6,8 +6,8 @@
 import json
 from datetime import datetime, timedelta
 
-from . import db
-from .models import MemoryStore, Signal
+from extensions import db
+from models import MemoryStore, Signal
 
 PATTERNS_RU = {
     "rsi_oversold": "RSI перепродан (<30)",
