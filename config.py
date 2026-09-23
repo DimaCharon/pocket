@@ -26,6 +26,15 @@ class Config:
         "DAHL_API_URL", "https://inference.dahl.global/v1/chat/completions"
     )
     DAHL_MODEL = os.environ.get("DAHL_MODEL", "zai-org/GLM-5.3-Flash")
+    # Цепочка моделей в порядке фолбэка: если основная перегружена (429/5xx),
+    # автоматически пробуются следующие. Меняется env DAHL_MODELS (через запятую).
+    DAHL_MODELS = [m.strip() for m in os.environ.get(
+        "DAHL_MODELS", "zai-org/GLM-5.3-Flash,deepseek-ai/DeepSeek-V4-Flash-0731"
+    ).split(",") if m.strip()]
+    # Повторов на ту же модель при 429/5xx. По умолчанию 0 — при перегрузке
+    # СРАЗУ пробуется следующая модель в цепочке (быстрый фолбэк на стабильную).
+    DAHL_RETRIES = 0
+    DAHL_RETRY_WAIT = 5  # пауза между повторами, секунд (если DAHL_RETRIES > 0)
     # Глобальный ключ (необязательно). Приоритет: ключ из профиля пользователя
     # (введён при входе / в настройках) > глобальный ключ.
     DAHL_API_KEY = os.environ.get("DAHL_API_KEY", "")

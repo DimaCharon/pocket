@@ -7,11 +7,16 @@
               Content-Type: application/json
     Body:     {"model": "zai-org/GLM-5.3-Flash", "messages": [...]}
 
-Ключ берётся из профиля пользователя (введён при входе / в настройках),
-при его отсутствии — глобальный DAHL_API_KEY из конфига (если задан).
+Ключ: из профиля пользователя (введён при входе / в настройках),
+при его отсутствии — глобальный DAHL_API_KEY из конфига.
+
+Модели: цепочка фолбэка (config.DAHL_MODELS). Если основная модель
+перегружена (429/5xx) — автоматически пробуются следующие в списке.
+Ошибки ключа/баланса (401/402) фолбэк не вызывают.
 """
 import json
 import re
+import time
 
 import requests
 
@@ -22,6 +27,10 @@ class AIServiceError(Exception):
     """Человекочитаемая ошибка — показывается пользователю как есть."""
 
 
+class _ModelUnavailable(Exception):
+    """Внутренняя: модель временно недоступна — пробуем следующую в цепочке."""
+
+
 class AIService:
     provider = "dahl.global"
 
@@ -30,14 +39,29 @@ class AIService:
         self.model = config.DAHL_MODEL
         self.timeout = config.DAHL_TIMEOUT
 
+    def _models(self):
+        """Цепочка моделей: первичная (DAHL_MODEL) + остальная из DAHL_MODELS."""
+        models = []
+        for m in getattr(config, "DAHL_MODELS", None) or []:
+            m = (m or "").strip()
+            if m and m not in models:
+                models.append(m)
+        primary = (getattr(config, "DAHL_MODEL", None) or "").strip()
+        if primary and primary not in models:
+            models.insert(0, primary)
+        return models or [self.model]
+
     # ---------------- низкоуровневый запрос ----------------
-    def _chat(self, system_prompt, user_prompt, api_key, timeout=None):
+    def _chat(self, system_prompt, user_prompt, api_key, model, timeout=None, retries=None):
+        if retries is None:
+            retries = getattr(config, "DAHL_RETRIES", 0)
+        wait = getattr(config, "DAHL_RETRY_WAIT", 10)
         headers = {
             "Authorization": "Bearer %s" % api_key,
             "Content-Type": "application/json",
         }
         payload = {
-            "model": self.model,
+            "model": model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -45,33 +69,38 @@ class AIService:
             "temperature": 0.3,
             "max_tokens": 1200,
         }
-        try:
-            r = requests.post(self.url, headers=headers, json=payload,
-                              timeout=timeout or self.timeout)
-        except requests.exceptions.Timeout:
-            raise AIServiceError(
-                "ИИ не ответил вовремя (ожидали до %d сек). Бесплатные модели медленные — повторите попытку."
-                % (timeout or self.timeout))
-        except requests.exceptions.RequestException as exc:
-            raise AIServiceError("Сетевая ошибка при обращении к ИИ: %s" % exc.__class__.__name__)
+        r = None
+        for attempt in range(retries + 1):
+            try:
+                r = requests.post(self.url, headers=headers, json=payload,
+                                  timeout=timeout or self.timeout)
+            except requests.exceptions.Timeout:
+                raise _ModelUnavailable(
+                    "не ответил вовремя (до %d сек)" % (timeout or self.timeout))
+            except requests.exceptions.RequestException as exc:
+                raise _ModelUnavailable("сетевая ошибка: %s" % exc.__class__.__name__)
+            if r.status_code == 429 and attempt < retries:
+                time.sleep(wait)
+                continue
+            break
 
         if r.status_code == 401:
             raise AIServiceError("API-ключ ИИ не принят (401). Проверьте ключ в ⚙️ Настройках.")
         if r.status_code == 402:
             raise AIServiceError("У ключа ИИ нет баланса (402). Пополните счёт dahl.global.")
         if r.status_code == 429:
-            raise AIServiceError("ИИ временно перегружен (429, rate limit). Подождите минуту и повторите.")
+            raise _ModelUnavailable("перегружен (429)")
         if r.status_code >= 500:
-            raise AIServiceError("Ошибка сервера ИИ (HTTP %d). Попробуйте через несколько минут." % r.status_code)
+            raise _ModelUnavailable("ошибка сервера (HTTP %d)" % r.status_code)
         if r.status_code != 200:
             raise AIServiceError("Неожиданный ответ ИИ (HTTP %d). Попробуйте ещё раз." % r.status_code)
 
         try:
             content = r.json()["choices"][0]["message"]["content"]
         except (ValueError, KeyError, IndexError, TypeError):
-            raise AIServiceError("Не удалось прочитать ответ ИИ. Попробуйте ещё раз.")
+            raise _ModelUnavailable("не удалось прочитать ответ")
         if not content or not str(content).strip():
-            raise AIServiceError("ИИ вернул пустой ответ. Попробуйте ещё раз.")
+            raise _ModelUnavailable("пустой ответ")
         return str(content)
 
     # ---------------- JSON из ответа ----------------
@@ -141,15 +170,31 @@ class AIService:
         if not key:
             raise AIServiceError(
                 "Не задан API-ключ ИИ. Введите его при входе на сайт или в ⚙️ Настройках.")
-        content = self._chat(self.SYSTEM_PROMPT, self.build_user_prompt(market, lessons), key)
-        parsed = self.extract_json(content)
-        if not parsed:
-            raise AIServiceError("ИИ вернул ответ не в JSON. Попробуйте ещё раз.")
-        sig = self._normalize(parsed)
-        if sig is None:
-            raise AIServiceError(
-                "Неверный формат ответа ИИ (direction должен быть CALL или PUT). Попробуйте ещё раз.")
-        return {"signal": sig, "provider": self.provider, "model": self.model, "raw": content[:3000]}
+        system = self.SYSTEM_PROMPT
+        user_prompt = self.build_user_prompt(market, lessons)
+
+        unavailable = []
+        for model in self._models():
+            try:
+                content = self._chat(system, user_prompt, key, model)
+            except AIServiceError:
+                raise  # проблема с ключом/балансом — фолбэк не поможет
+            except _ModelUnavailable as exc:
+                unavailable.append("%s (%s)" % (model, exc))
+                continue
+            parsed = self.extract_json(content)
+            if not parsed:
+                unavailable.append("%s (ответ не в JSON)" % model)
+                continue
+            sig = self._normalize(parsed)
+            if sig is None:
+                unavailable.append("%s (неверный формат ответа)" % model)
+                continue
+            return {"signal": sig, "provider": self.provider, "model": model,
+                    "raw": content[:3000]}
+        raise AIServiceError(
+            "Все модели ИИ временно недоступны: %s. Подождите минуту и повторите."
+            % "; ".join(unavailable)[:220])
 
     @staticmethod
     def _normalize(parsed):
@@ -181,8 +226,12 @@ class AIService:
         key = (api_key or "").strip()
         if not key:
             return False, "Нет ключа для проверки."
+        model = self._models()[0]
         try:
-            content = self._chat("Ответь одним словом: OK", "Тест подключения.", key, timeout=60)
-            return True, "Ключ работает! Модель %s ответила: %r" % (self.model, content[:50])
+            content = self._chat("Ответь одним словом: OK", "Тест подключения.",
+                                 key, model, timeout=60, retries=0)
+            return True, "Ключ работает! Модель %s ответила: %r" % (model, content[:50])
         except AIServiceError as exc:
             return False, str(exc)
+        except _ModelUnavailable as exc:
+            return False, "Модель %s временно недоступна: %s. Попробуйте позже." % (model, exc)
