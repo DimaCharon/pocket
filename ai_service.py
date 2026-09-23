@@ -5,7 +5,7 @@
     POST https://inference.dahl.global/v1/chat/completions
     Headers:  Authorization: Bearer <ключ пользователя>
               Content-Type: application/json
-    Body:     {"model": "deepseek-ai/DeepSeek-V4-Flash-0731", "messages": [...]}
+    Body:     {"model": "zai-org/GLM-5.3-Flash", "messages": [...]}
 
 Ключ берётся из профиля пользователя (введён при входе / в настройках),
 при его отсутствии — глобальный DAHL_API_KEY из конфига (если задан).

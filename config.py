@@ -25,7 +25,7 @@ class Config:
     DAHL_API_URL = os.environ.get(
         "DAHL_API_URL", "https://inference.dahl.global/v1/chat/completions"
     )
-    DAHL_MODEL = os.environ.get("DAHL_MODEL", "deepseek-ai/DeepSeek-V4-Flash-0731")
+    DAHL_MODEL = os.environ.get("DAHL_MODEL", "zai-org/GLM-5.3-Flash")
     # Глобальный ключ (необязательно). Приоритет: ключ из профиля пользователя
     # (введён при входе / в настройках) > глобальный ключ.
     DAHL_API_KEY = os.environ.get("DAHL_API_KEY", "")

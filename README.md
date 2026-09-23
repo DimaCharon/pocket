@@ -21,7 +21,7 @@
 | Backend | Python + Flask 3.0, Flask-SQLAlchemy, Flask-Login |
 | БД | SQLite локально; **PostgreSQL** на RelaxDev (управляемая БД, `DATABASE_URL` подставляется платформой) |
 | Frontend | Jinja2 + vanilla CSS/JS (без фреймворков) |
-| ИИ | **dahl.global** (OpenAI-совместимый API), модель `deepseek-ai/DeepSeek-V4-Flash-0731` |
+| ИИ | **dahl.global** (OpenAI-совместимый API), модель `zai-org/GLM-5.3-Flash` |
 | Рынок | Живой WebSocket Pocket Option (по SSID пользователя) + честная симуляция как запасной режим |
 | Деплой | Docker (gunicorn, порт `${PORT:-8080}`) |
 
